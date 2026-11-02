@@ -1,0 +1,32 @@
+name: Inspect lots
+
+on:
+  workflow_dispatch:
+    inputs:
+      slugs:
+        description: "Lot links to inspect (comma separated)"
+        required: true
+        default: "ahrend-archiefkast-%282x%29-A1-50647-222,silo-trechter-A1-50647-53,platte-wagen-%283x%29-A1-50656-140"
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install browser
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Inspect closed lots
+        env:
+          SLUGS: ${{ inputs.slugs }}
+        run: python scraper/inspect_lots.py "$SLUGS"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inspect
+          path: inspect/
+          retention-days: 7
