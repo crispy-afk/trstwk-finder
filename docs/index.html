@@ -162,8 +162,8 @@
         <select id="reclaim"><option value="0">Add VAT to price</option><option value="1">I reclaim VAT (business)</option></select>
       </label>
     </div>
-    <p class="hint">The default fees are guesses. Open any lot on Troostwijk, check the cost breakdown ("Veilingkosten")
-      and copy the real numbers here. Lots marked "Margin VAT" have no VAT on the bid itself.</p>
+    <p class="hint">Defaults are Troostwijk's standard fees (19% premium, no fixed fee, 21% VAT on bid and premium).
+      When the scanner knows a lot's own premium and VAT, it uses those instead. Lots marked "Margin VAT" have no VAT on the bid itself.</p>
     <h3>Travel</h3>
     <div class="filters">
       <label>Home (postcode or city) <input id="home" placeholder="e.g. 3011 AA Rotterdam"></label>
@@ -193,7 +193,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const PAGE = 120;
-const DEFAULTS = { premium: 17, fixed: 9, vat: 21, reclaim: "0", perKm: 0.3, margin: 30, resale: 50, home: "", homeGeo: null };
+const DEFAULTS = { premium: 19, fixed: 0, vat: 21, reclaim: "0", perKm: 0.3, margin: 30, resale: 50, home: "", homeGeo: null };
 let lots = [], shown = PAGE, meta = {};
 
 const store = {
@@ -204,19 +204,23 @@ let stars = new Set(store.get("stars", []));
 let hidden = new Set(store.get("hidden", []));
 let myPrices = store.get("prices", {});           // id -> {newPrice, salePrice}
 const cfg = Object.assign({}, DEFAULTS, store.get("cfg", {}));
+// Old guessed defaults (17% + €9) -> Troostwijk's real fees (19%, no fixed fee)
+if (cfg.premium === 17 && cfg.fixed === 9) { cfg.premium = 19; cfg.fixed = 0; store.set("cfg", cfg); }
 
 const eur = n => n == null || !isFinite(n) ? "–" : (n < 0 ? "−€" : "€") + Math.round(Math.abs(n)).toLocaleString("nl-NL");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 // ---------- money ----------
-function vatRate() { return cfg.reclaim === "1" ? 0 : cfg.vat / 100; }
+// Each lot's own premium and VAT come from Troostwijk when known; otherwise your settings
+function premiumOf(lot) { return (lot.premium ?? cfg.premium) / 100; }
+function vatRate(lot) { return cfg.reclaim === "1" ? 0 : ((lot && lot.vatRate != null) ? lot.vatRate : cfg.vat) / 100; }
 function allIn(bid, lot) {
-  const p = cfg.premium / 100, v = vatRate(), g = lot.margin ? 0 : 1;
+  const p = premiumOf(lot), v = vatRate(lot), g = lot.margin ? 0 : 1;
   const fee = bid * p + Number(cfg.fixed);
   return bid + fee + v * (g * bid + fee);
 }
 function maxBidFor(target, lot) {          // highest bid where all-in cost stays at or below target
-  const p = cfg.premium / 100, v = vatRate(), g = lot.margin ? 0 : 1, F = Number(cfg.fixed);
+  const p = premiumOf(lot), v = vatRate(lot), g = lot.margin ? 0 : 1, F = Number(cfg.fixed);
   return (target - F * (1 + v)) / (1 + p + v * (g + p));
 }
 function km(lot) {
