@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troostwijk Finder</title>
+<style>
+  :root {
+    --bg: #f4f2ee; --card: #ffffff; --ink: #1c1b19; --muted: #6d6a64; --line: #e2ded6;
+    --accent: #0f6b4f; --accent-soft: #e3f1ea; --warn: #a3481c; --warn-soft: #f8e9e0; --star: #c58a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141412; --card: #1e1d1b; --ink: #ece9e3; --muted: #9b978f; --line: #33312d;
+      --accent: #4fc196; --accent-soft: #17352a; --warn: #f0935f; --warn-soft: #3a2418; --star: #f2c14e; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 20px 16px 8px; max-width: 1400px; margin: 0 auto; display: flex;
+    flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .meta { color: var(--muted); font-size: 13px; }
+  main { max-width: 1400px; margin: 0 auto; padding: 0 16px 40px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px; margin: 10px 0; }
+  .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted);
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+  input, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 7px 8px; width: 100%; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .checks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border: 1px solid var(--line);
+    border-radius: 999px; font-size: 13px; color: var(--ink); text-transform: none; font-weight: 500;
+    letter-spacing: 0; cursor: pointer; flex-direction: row; }
+  .chip input { width: auto; margin: 0; }
+  details summary { cursor: pointer; font-weight: 600; }
+  .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 14px 0 8px; }
+  .bar strong { font-size: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .lot { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    display: flex; flex-direction: column; }
+  .lot.hidden-lot { opacity: 0.45; }
+  .img { aspect-ratio: 4/3; background: var(--line) center/cover no-repeat; display: block; position: relative; }
+  .badge { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 700; padding: 3px 7px;
+    border-radius: 5px; background: var(--accent-soft); color: var(--accent); }
+  .badge.met { background: var(--warn-soft); color: var(--warn); }
+  .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .title { color: var(--ink); text-decoration: none; font-weight: 600; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .title:hover { text-decoration: underline; }
+  .price { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .price small { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); }
+  .soon { color: var(--warn); font-weight: 600; }
+  .actions { display: flex; gap: 6px; margin-top: auto; padding-top: 4px; }
+  button { font: inherit; font-size: 13px; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button.on { color: var(--star); border-color: var(--star); }
+  .more { display: block; margin: 16px auto; padding: 9px 18px; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Troostwijk Finder</h1>
+  <span class="meta" id="meta">Loading…</span>
+</header>
+<main>
+  <section class="panel">
+    <div class="filters">
+      <label>Search
+        <input id="q" placeholder="e.g. makita, -accu">
+      </label>
+      <label>Category
+        <select id="cat"><option value="">All categories</option></select>
+      </label>
+      <label>Sale type
+        <select id="term">
+          <option value="">Both (highest bid wins)</option>
+          <option value="GUARANTEED_SALE">No reserve only</option>
+          <option value="OPEN_RESERVE_PRICE_ACHIEVED">Reserve met only</option>
+        </select>
+      </label>
+      <label>Closing within
+        <select id="within">
+          <option value="3">3 hours</option><option value="6">6 hours</option>
+          <option value="12">12 hours</option><option value="24">24 hours</option>
+          <option value="48">48 hours</option><option value="72" selected>72 hours</option>
+        </select>
+      </label>
+      <label>Max all-in price (€)
+        <input id="maxPrice" type="number" min="0" placeholder="no limit">
+      </label>
+      <label>Max bids so far
+        <input id="maxBids" type="number" min="0" placeholder="no limit">
+      </label>
+      <label>Sort by
+        <select id="sort">
+          <option value="end">Closing soonest</option>
+          <option value="price">Cheapest all-in</option>
+          <option value="followers">Most followers</option>
+          <option value="bids">Fewest bids</option>
+        </select>
+      </label>
+      <label>Show
+        <select id="show">
+          <option value="">Everything except hidden</option>
+          <option value="star">Starred only</option>
+          <option value="hidden">Hidden only</option>
+        </select>
+      </label>
+    </div>
+    <div style="margin-top:10px">
+      <label>Countries</label>
+      <div class="checks" id="countries" style="margin-top:4px"></div>
+    </div>
+  </section>
+
+  <details class="panel">
+    <summary>Fee settings: check these once</summary>
+    <div class="filters" style="margin-top:10px">
+      <label>Buyer's premium (%)
+        <input id="premium" type="number" step="0.5" min="0">
+      </label>
+      <label>Fixed fee per lot (€)
+        <input id="fixed" type="number" step="0.5" min="0">
+      </label>
+      <label>VAT (%)
+        <input id="vat" type="number" step="1" min="0">
+      </label>
+      <label>VAT
+        <select id="reclaim">
+          <option value="0">Add VAT to price</option>
+          <option value="1">I reclaim VAT (business)</option>
+        </select>
+      </label>
+    </div>
+    <p class="hint">The default numbers are guesses. Open any lot on Troostwijk, look at the cost breakdown under the bid box
+      ("Veilingkosten"), and copy the real numbers here. Some lots (margin goods) have no VAT on the bid, so the all-in price
+      can be slightly too high for those.</p>
+  </details>
+
+  <div class="bar">
+    <strong id="count"></strong>
+    <span class="meta">Prices use the current bid. Bids usually rise sharply in the final hours.</span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <button class="more" id="more" hidden>Show more</button>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const PAGE = 120;
+const DEFAULT_FEES = { premium: 17, fixed: 9, vat: 21, reclaim: "0" };
+let lots = [], shown = PAGE;
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("tf_" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("tf_" + k, JSON.stringify(v)); } catch {} }
+};
+let stars = new Set(store.get("stars", []));
+let hidden = new Set(store.get("hidden", []));
+const fees = Object.assign({}, DEFAULT_FEES, store.get("fees", {}));
+
+const eur = n => "€" + Math.round(n).toLocaleString("nl-NL");
+
+function allIn(bid) {
+  const fee = bid * fees.premium / 100 + Number(fees.fixed);
+  const vat = fees.reclaim === "1" ? 0 : (bid + fee) * fees.vat / 100;
+  return bid + fee + vat;
+}
+
+function timeLeft(end) {
+  const s = end - Date.now() / 1000;
+  if (s <= 0) return "closed";
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h ${m}m`;
+}
+
+function matchesSearch(title, q) {
+  const words = q.toLowerCase().split(/[,\s]+/).filter(Boolean);
+  const t = title.toLowerCase();
+  return words.every(w => w.startsWith("-") ? !t.includes(w.slice(1)) : t.includes(w));
+}
+
+function render() {
+  const now = Date.now() / 1000;
+  const q = $("q").value.trim(), cat = $("cat").value, term = $("term").value;
+  const within = now + Number($("within").value) * 3600;
+  const maxPrice = Number($("maxPrice").value) || Infinity;
+  const maxBids = $("maxBids").value === "" ? Infinity : Number($("maxBids").value);
+  const show = $("show").value;
+  const ccs = new Set([...document.querySelectorAll("#countries input:checked")].map(i => i.value));
+
+  const list = lots.filter(l =>
+    l.end > now && l.end <= within &&
+    (!cat || l.cat === cat) && (!term || l.term === term) &&
+    ccs.has(l.cc) && l.bids <= maxBids && l.allIn <= maxPrice &&
+    (!q || matchesSearch(l.title, q)) &&
+    (show === "star" ? stars.has(l.id) : show === "hidden" ? hidden.has(l.id) : !hidden.has(l.id))
+  );
+  const sorters = {
+    end: (a, b) => a.end - b.end,
+    price: (a, b) => a.allIn - b.allIn,
+    followers: (a, b) => b.followers - a.followers,
+    bids: (a, b) => a.bids - b.bids || a.end - b.end,
+  };
+  list.sort(sorters[$("sort").value]);
+
+  $("count").textContent = `${list.length.toLocaleString("nl-NL")} lots`;
+  $("grid").innerHTML = list.length ? list.slice(0, shown).map(card).join("")
+    : `<p class="empty">No lots match these filters.</p>`;
+  $("more").hidden = list.length <= shown;
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function card(l) {
+  const url = `https://www.troostwijkauctions.com/nl/l/${encodeURIComponent(l.slug)}`;
+  const soon = l.end - Date.now() / 1000 < 6 * 3600;
+  const img = l.img ? `background-image:url('${esc(l.img)}')` : "";
+  return `<article class="lot ${hidden.has(l.id) ? "hidden-lot" : ""}">
+    <a class="img" href="${url}" target="_blank" rel="noopener" style="${img}">
+      <span class="badge ${l.term === "GUARANTEED_SALE" ? "" : "met"}">${l.term === "GUARANTEED_SALE" ? "No reserve" : "Reserve met"}</span>
+    </a>
+    <div class="body">
+      <a class="title" href="${url}" target="_blank" rel="noopener">${esc(l.title)}</a>
+      <div class="price">${eur(l.allIn)} <small>all-in · ${l.bids ? "bid" : "start"} ${eur(l.bid)}</small></div>
+      <div class="row">
+        <span class="${soon ? "soon" : ""}">⏱ ${timeLeft(l.end)}</span>
+        <span>${l.bids} bids</span><span>${l.followers} followers</span>
+      </div>
+      <div class="row"><span>📍 ${esc(l.city)}, ${l.cc}</span><span>${esc(l.cat)}</span></div>
+      <div class="actions">
+        <button class="${stars.has(l.id) ? "on" : ""}" data-star="${l.id}">${stars.has(l.id) ? "★ Starred" : "☆ Star"}</button>
+        <button data-hide="${l.id}">${hidden.has(l.id) ? "Unhide" : "Hide"}</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+function recompute() {
+  lots.forEach(l => l.allIn = allIn(l.bid));
+  render();
+}
+
+function setupFees() {
+  for (const k of ["premium", "fixed", "vat", "reclaim"]) {
+    $(k).value = fees[k];
+    $(k).addEventListener("input", () => {
+      fees[k] = k === "reclaim" ? $(k).value : Number($(k).value) || 0;
+      store.set("fees", fees);
+      recompute();
+    });
+  }
+}
+
+function setupFilters(data) {
+  const cats = [...new Set(data.lots.map(l => l.cat))].sort();
+  $("cat").insertAdjacentHTML("beforeend", cats.map(c => `<option>${esc(c)}</option>`).join(""));
+  const counts = {};
+  data.lots.forEach(l => counts[l.cc] = (counts[l.cc] || 0) + 1);
+  const saved = store.get("countries", null);
+  $("countries").innerHTML = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map(cc =>
+    `<label class="chip"><input type="checkbox" value="${cc}" ${!saved || saved.includes(cc) ? "checked" : ""}>${cc || "?"} (${counts[cc]})</label>`
+  ).join("");
+  for (const id of ["q", "cat", "term", "within", "maxPrice", "maxBids", "sort", "show"]) {
+    const saved = store.get("f_" + id, null);
+    if (saved !== null && id !== "q") $(id).value = saved;
+    $(id).addEventListener("input", () => { store.set("f_" + id, $(id).value); shown = PAGE; render(); });
+  }
+  $("countries").addEventListener("change", () => {
+    store.set("countries", [...document.querySelectorAll("#countries input:checked")].map(i => i.value));
+    shown = PAGE; render();
+  });
+}
+
+$("grid").addEventListener("click", e => {
+  const s = e.target.dataset.star, h = e.target.dataset.hide;
+  if (s) { stars.has(s) ? stars.delete(s) : stars.add(s); store.set("stars", [...stars]); render(); }
+  if (h) { hidden.has(h) ? hidden.delete(h) : hidden.add(h); store.set("hidden", [...hidden]); render(); }
+});
+$("more").addEventListener("click", () => { shown += PAGE; render(); });
+
+fetch("lots.json?" + Date.now())
+  .then(r => r.json())
+  .then(data => {
+    lots = data.lots;
+    const updated = data.generatedAt ? new Date(data.generatedAt).toLocaleString("nl-NL",
+      { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "never";
+    $("meta").textContent = `Updated ${updated} · ${data.count.toLocaleString("nl-NL")} lots where the highest bid wins`;
+    setupFees();
+    setupFilters(data);
+    recompute();
+    setInterval(render, 60000);
+  })
+  .catch(() => { $("meta").textContent = "No data yet: run the scan once (see the README)."; });
+</script>
+</body>
+</html>
