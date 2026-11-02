@@ -1,0 +1,39 @@
+name: Scan Troostwijk
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"   # every 6 hours
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tools
+        run: pip install curl_cffi
+
+      - name: Scan all categories
+        run: python scraper/scrape.py
+
+      - name: Save new data
+        run: |
+          git config user.name "troostwijk-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/lots.json
+          git diff --cached --quiet || git commit -m "Update lots"
+          git pull --rebase
+          git push
