@@ -7,11 +7,13 @@
 <style>
   :root {
     --bg: #f4f2ee; --card: #ffffff; --ink: #1c1b19; --muted: #6d6a64; --line: #e2ded6;
-    --accent: #0f6b4f; --accent-soft: #e3f1ea; --warn: #a3481c; --warn-soft: #f8e9e0; --star: #c58a00;
+    --accent: #0f6b4f; --accent-soft: #e3f1ea; --warn: #a3481c; --warn-soft: #f8e9e0;
+    --bad: #b3261e; --star: #b07a00; --info: #2f5f9e; --info-soft: #e5edf8;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #141412; --card: #1e1d1b; --ink: #ece9e3; --muted: #9b978f; --line: #33312d;
-      --accent: #4fc196; --accent-soft: #17352a; --warn: #f0935f; --warn-soft: #3a2418; --star: #f2c14e; }
+      --accent: #4fc196; --accent-soft: #17352a; --warn: #f0935f; --warn-soft: #3a2418;
+      --bad: #ff8a80; --star: #f2c14e; --info: #8fb6ec; --info-soft: #1b2a3d; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
@@ -19,16 +21,17 @@
   header { padding: 20px 16px 8px; max-width: 1400px; margin: 0 auto; display: flex;
     flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
   h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 17px; margin: 0 0 6px; }
+  h3 { font-size: 13px; margin: 14px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
   .meta { color: var(--muted); font-size: 13px; }
   main { max-width: 1400px; margin: 0 auto; padding: 0 16px 40px; }
-  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-    padding: 12px; margin: 10px 0; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 10px 0; }
   .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted);
     font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
   input, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
     border-radius: 6px; padding: 7px 8px; width: 100%; text-transform: none; letter-spacing: 0; font-weight: 400; }
-  .checks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .checks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
   .chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border: 1px solid var(--line);
     border-radius: 999px; font-size: 13px; color: var(--ink); text-transform: none; font-weight: 500;
     letter-spacing: 0; cursor: pointer; flex-direction: row; }
@@ -37,28 +40,57 @@
   .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 14px 0 8px; }
   .bar strong { font-size: 16px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-  .lot { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
-    display: flex; flex-direction: column; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .lot { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
   .lot.hidden-lot { opacity: 0.45; }
   .img { aspect-ratio: 4/3; background: var(--line) center/cover no-repeat; display: block; position: relative; }
-  .badge { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 700; padding: 3px 7px;
-    border-radius: 5px; background: var(--accent-soft); color: var(--accent); }
+  .badges { position: absolute; top: 8px; left: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .badge { font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); }
   .badge.met { background: var(--warn-soft); color: var(--warn); }
+  .badge.info { background: var(--info-soft); color: var(--info); }
   .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
   .title { color: var(--ink); text-decoration: none; font-weight: 600; line-height: 1.3;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .title:hover { text-decoration: underline; }
-  .price { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .price { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
   .price small { font-size: 12px; font-weight: 500; color: var(--muted); }
   .row { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); }
   .soon { color: var(--warn); font-weight: 600; }
-  .actions { display: flex; gap: 6px; margin-top: auto; padding-top: 4px; }
+  .deal { font-size: 13px; font-weight: 600; padding: 5px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+  .deal.bad { background: var(--warn-soft); color: var(--bad); }
+  .actions { display: flex; gap: 6px; margin-top: auto; padding-top: 4px; flex-wrap: wrap; }
   button { font: inherit; font-size: 13px; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
     border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--card); border-color: var(--accent); }
   button.on { color: var(--star); border-color: var(--star); }
   .more { display: block; margin: 16px auto; padding: 9px 18px; }
   .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink);
+    padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); }
+  dialog::backdrop { background: rgb(0 0 0 / .45); }
+  .modal { padding: 16px; }
+  .modal-head { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+  .links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .links a { font-size: 13px; color: var(--info); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 5px 0; border-bottom: 1px solid var(--line); }
+  td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .big { font-size: 20px; }
+  .good { color: var(--accent); } .badtxt { color: var(--bad); }
+  .examples a { color: var(--info); font-size: 13px; }
+  .examples li { margin: 3px 0; }
+  .spark { vertical-align: middle; }
+  .colls { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: thin; }
+  .coll { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .coll .n { font-weight: 500; color: var(--muted); font-size: 12px; }
+  .coll.sel { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .coll.sel .n { color: var(--bg); opacity: .75; }
+  .coll.zero { opacity: .5; }
+  .coll.add { border-style: dashed; color: var(--muted); }
+  .badge.bad { background: var(--warn-soft); color: var(--bad); }
+  .reserveHint { font-size: 13px; color: var(--muted); }
+  .reserveHint a { color: var(--info); cursor: pointer; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -67,93 +99,102 @@
   <span class="meta" id="meta">Loading…</span>
 </header>
 <main>
-  <section class="panel">
-    <div class="filters">
-      <label>Search
-        <input id="q" placeholder="e.g. makita, -accu">
-      </label>
-      <label>Category
-        <select id="cat"><option value="">All categories</option></select>
-      </label>
+  <nav class="colls" id="colls" aria-label="Collections"></nav>
+  <details class="panel" id="filterPanel" open>
+    <summary>Filters</summary>
+    <div class="filters" style="margin-top:10px">
+      <label>Search <input id="q" placeholder="e.g. makita, -accu"></label>
+      <label>Category <select id="cat"><option value="">All categories</option></select></label>
       <label>Sale type
         <select id="term">
-          <option value="">Both (highest bid wins)</option>
+          <option value="">Highest bid wins (no reserve + reserve met)</option>
           <option value="GUARANTEED_SALE">No reserve only</option>
           <option value="OPEN_RESERVE_PRICE_ACHIEVED">Reserve met only</option>
+          <option value="ALL">Also reserve not met yet (valuables)</option>
         </select>
       </label>
       <label>Closing within
         <select id="within">
-          <option value="3">3 hours</option><option value="6">6 hours</option>
-          <option value="12">12 hours</option><option value="24">24 hours</option>
-          <option value="48">48 hours</option><option value="72" selected>72 hours</option>
+          <option value="3">3 hours</option><option value="6">6 hours</option><option value="12">12 hours</option>
+          <option value="24">24 hours</option><option value="48">48 hours</option><option value="72" selected>72 hours</option>
         </select>
       </label>
-      <label>Max all-in price (€)
-        <input id="maxPrice" type="number" min="0" placeholder="no limit">
-      </label>
-      <label>Max bids so far
-        <input id="maxBids" type="number" min="0" placeholder="no limit">
+      <label>Max likely all-in (€) <input id="maxPrice" type="number" min="0" placeholder="no limit"></label>
+      <label>Max distance (km) <input id="maxKm" type="number" min="0" placeholder="no limit"></label>
+      <label>Max followers <input id="maxFollowers" type="number" min="0" placeholder="no limit"></label>
+      <label>Lot size
+        <select id="bulk"><option value="">Any</option><option value="1">Bulk lots only (2+)</option></select>
       </label>
       <label>Sort by
         <select id="sort">
           <option value="end">Closing soonest</option>
-          <option value="price">Cheapest all-in</option>
-          <option value="followers">Most followers</option>
-          <option value="bids">Fewest bids</option>
+          <option value="profit">Best profit (your prices)</option>
+          <option value="price">Cheapest likely all-in</option>
+          <option value="unit">Cheapest per unit</option>
+          <option value="km">Nearest</option>
+          <option value="quiet">Fewest followers</option>
+          <option value="belowComps">Most below similar sold</option>
         </select>
       </label>
       <label>Show
         <select id="show">
           <option value="">Everything except hidden</option>
           <option value="star">Starred only</option>
+          <option value="priced">Lots I priced</option>
           <option value="hidden">Hidden only</option>
         </select>
       </label>
     </div>
     <div style="margin-top:10px">
       <label>Countries</label>
-      <div class="checks" id="countries" style="margin-top:4px"></div>
+      <div class="checks" id="countries"></div>
     </div>
-  </section>
+  </details>
 
-  <details class="panel">
-    <summary>Fee settings: check these once</summary>
-    <div class="filters" style="margin-top:10px">
-      <label>Buyer's premium (%)
-        <input id="premium" type="number" step="0.5" min="0">
-      </label>
-      <label>Fixed fee per lot (€)
-        <input id="fixed" type="number" step="0.5" min="0">
-      </label>
-      <label>VAT (%)
-        <input id="vat" type="number" step="1" min="0">
-      </label>
+  <details class="panel" id="settingsPanel">
+    <summary>Settings: fees, home address, profit target</summary>
+    <h3>Troostwijk fees</h3>
+    <div class="filters">
+      <label>Buyer's premium (%) <input id="premium" type="number" step="0.5" min="0"></label>
+      <label>Fixed fee per lot (€) <input id="fixed" type="number" step="0.5" min="0"></label>
+      <label>VAT (%) <input id="vat" type="number" step="1" min="0"></label>
       <label>VAT
-        <select id="reclaim">
-          <option value="0">Add VAT to price</option>
-          <option value="1">I reclaim VAT (business)</option>
-        </select>
+        <select id="reclaim"><option value="0">Add VAT to price</option><option value="1">I reclaim VAT (business)</option></select>
       </label>
     </div>
-    <p class="hint">The default numbers are guesses. Open any lot on Troostwijk, look at the cost breakdown under the bid box
-      ("Veilingkosten"), and copy the real numbers here. Some lots (margin goods) have no VAT on the bid, so the all-in price
-      can be slightly too high for those.</p>
+    <p class="hint">The default fees are guesses. Open any lot on Troostwijk, check the cost breakdown ("Veilingkosten")
+      and copy the real numbers here. Lots marked "Margin VAT" have no VAT on the bid itself.</p>
+    <h3>Travel</h3>
+    <div class="filters">
+      <label>Home (postcode or city) <input id="home" placeholder="e.g. 3011 AA Rotterdam"></label>
+      <label>&nbsp;<button id="findHome" type="button">Find</button></label>
+      <label>&nbsp;<button id="gpsHome" type="button">Use my location</button></label>
+      <label>Cost per km (€) <input id="perKm" type="number" step="0.05" min="0"></label>
+    </div>
+    <p class="hint" id="homeStatus"></p>
+    <h3>Profit</h3>
+    <div class="filters">
+      <label>Target margin (%) <input id="margin" type="number" step="5" min="0"></label>
+      <label>Resale value (% of new price) <input id="resale" type="number" step="5" min="0" max="100"></label>
+    </div>
+    <p class="hint">Resale value is used when you enter a new price but no sale price. Used items usually sell well below new.</p>
   </details>
 
   <div class="bar">
-    <strong id="count"></strong>
-    <span class="meta">Prices use the current bid. Bids usually rise sharply in the final hours.</span>
+    <span><strong id="count"></strong> <span class="reserveHint" id="reserveHint"></span></span>
+    <span class="meta" id="learn"></span>
   </div>
   <div class="grid" id="grid"></div>
   <button class="more" id="more" hidden>Show more</button>
 </main>
 
+<dialog id="dlg"><div class="modal" id="modal"></div></dialog>
+
 <script>
 const $ = id => document.getElementById(id);
 const PAGE = 120;
-const DEFAULT_FEES = { premium: 17, fixed: 9, vat: 21, reclaim: "0" };
-let lots = [], shown = PAGE;
+const DEFAULTS = { premium: 17, fixed: 9, vat: 21, reclaim: "0", perKm: 0.3, margin: 30, resale: 50, home: "", homeGeo: null };
+let lots = [], shown = PAGE, meta = {};
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem("tf_" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -161,113 +202,322 @@ const store = {
 };
 let stars = new Set(store.get("stars", []));
 let hidden = new Set(store.get("hidden", []));
-const fees = Object.assign({}, DEFAULT_FEES, store.get("fees", {}));
+let myPrices = store.get("prices", {});           // id -> {newPrice, salePrice}
+const cfg = Object.assign({}, DEFAULTS, store.get("cfg", {}));
 
-const eur = n => "€" + Math.round(n).toLocaleString("nl-NL");
+const eur = n => n == null || !isFinite(n) ? "–" : (n < 0 ? "−€" : "€") + Math.round(Math.abs(n)).toLocaleString("nl-NL");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-function allIn(bid) {
-  const fee = bid * fees.premium / 100 + Number(fees.fixed);
-  const vat = fees.reclaim === "1" ? 0 : (bid + fee) * fees.vat / 100;
-  return bid + fee + vat;
+// ---------- money ----------
+function vatRate() { return cfg.reclaim === "1" ? 0 : cfg.vat / 100; }
+function allIn(bid, lot) {
+  const p = cfg.premium / 100, v = vatRate(), g = lot.margin ? 0 : 1;
+  const fee = bid * p + Number(cfg.fixed);
+  return bid + fee + v * (g * bid + fee);
+}
+function maxBidFor(target, lot) {          // highest bid where all-in cost stays at or below target
+  const p = cfg.premium / 100, v = vatRate(), g = lot.margin ? 0 : 1, F = Number(cfg.fixed);
+  return (target - F * (1 + v)) / (1 + p + v * (g + p));
+}
+function km(lot) {
+  if (!cfg.homeGeo || !lot.geo) return null;
+  const [a, b] = cfg.homeGeo, [c, d] = lot.geo, r = Math.PI / 180;
+  const h = Math.sin((c - a) * r / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin((d - b) * r / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h)) * 1.3;   // ×1.3: roads are not straight lines
+}
+function travel(lot) { const k = km(lot); return k == null ? 0 : 2 * k * cfg.perKm; }
+function salePrice(lot) {
+  const p = myPrices[lot.id];
+  if (!p) return null;
+  if (p.salePrice) return Number(p.salePrice);
+  if (p.newPrice) return Number(p.newPrice) * cfg.resale / 100;
+  return null;
+}
+function compute(l) {
+  l.likelyBid = l.pred ? l.pred.mid : l.bid;
+  l.likely = allIn(l.likelyBid, l);
+  l.now = allIn(l.bid, l);
+  l.km = km(l);
+  l.travel = travel(l);
+  l.unit = (l.likely + l.travel) / (l.qty || 1);
+  l.sale = salePrice(l);
+  if (l.sale) {
+    l.maxBid = maxBidFor(l.sale / (1 + cfg.margin / 100) - l.travel, l);
+    l.profit = l.sale - l.likely - l.travel;
+  } else { l.maxBid = l.profit = null; }
+  l.belowComps = l.comps ? (l.comps.price - l.likelyBid) / l.comps.price : null;
+}
+const recompute = () => { lots.forEach(compute); render(); };
+
+// ---------- collections ----------
+const WIN = new Set(["GUARANTEED_SALE", "OPEN_RESERVE_PRICE_ACHIEVED"]);
+let builtIn = [], custom = store.get("colls", []), activeColl = store.get("activeColl", "");
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// whole words for "find", word starts for "skip" (so "hoes" also skips "hoesjes")
+const wordRe = (words, prefix) => (words || []).map(w =>
+  new RegExp(`(?<![\\p{L}\\p{N}])${escRe(w.toLowerCase())}${prefix ? "" : "(?![\\p{L}\\p{N}])"}`, "u"));
+function compileColl(c) {
+  return { ...c, subSet: new Set(c.subs || []), anyRe: wordRe(c.any), noneRe: wordRe(c.none, true) };
+}
+function inColl(l, c) {
+  const text = `${l.title} ${l.brand || ""} ${l.model || ""}`.toLowerCase();
+  const hasSub = c.subSet.has(l.sub), hasAny = c.anyRe.some(r => r.test(text));
+  const base = c.subSet.size && c.anyRe.length ? (c.needBoth ? hasSub && hasAny : hasSub || hasAny)
+             : c.subSet.size ? hasSub : hasAny;
+  return base && !c.noneRe.some(r => r.test(text));
+}
+function allColls() { return [...builtIn, ...custom].map(compileColl); }
+function tagCollections() {
+  const cs = allColls();
+  lots.forEach(l => l.colls = cs.filter(c => inColl(l, c)).map(c => c.name));
+}
+function renderColls(base) {
+  const counts = {};
+  base.forEach(l => l.colls.forEach(n => counts[n] = (counts[n] || 0) + 1));
+  const chip = (name, label, n, extra = "") =>
+    `<button class="coll ${activeColl === name ? "sel" : ""} ${n === 0 ? "zero" : ""} ${extra}" data-coll="${esc(name)}">${label}${n != null ? ` <span class="n">${n}</span>` : ""}</button>`;
+  $("colls").innerHTML = chip("", "All lots", base.length) +
+    [...builtIn, ...custom].map(c => chip(c.name, `${c.icon || "⭐"} ${esc(c.name)}`, counts[c.name] || 0)).join("") +
+    `<button class="coll add" id="addColl">+ My collection</button>` +
+    (custom.some(c => c.name === activeColl) ? `<button class="coll add" id="delColl">Delete “${esc(activeColl)}”</button>` : "");
+}
+$("colls").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.id === "addColl") return openCollEditor();
+  if (b.id === "delColl") {
+    custom = custom.filter(c => c.name !== activeColl); store.set("colls", custom);
+    activeColl = ""; store.set("activeColl", ""); tagCollections(); render(); return;
+  }
+  activeColl = b.dataset.coll; store.set("activeColl", activeColl); shown = PAGE; render();
+});
+function openCollEditor() {
+  $("modal").innerHTML = `
+    <div class="modal-head"><h2>New collection</h2><button id="closeDlg" aria-label="Close">✕</button></div>
+    <p class="hint">A collection shows every lot whose title contains one of your words (whole words). Skip-words also catch longer forms: "filter" skips "filters".</p>
+    <div class="filters" style="grid-template-columns:1fr">
+      <label>Name <input id="cName" placeholder="e.g. Dyson"></label>
+      <label>Words to find (comma separated) <input id="cAny" placeholder="e.g. dyson, v15, airwrap"></label>
+      <label>Words to skip (optional) <input id="cNone" placeholder="e.g. filter, onderdeel"></label>
+    </div>
+    <p class="hint" id="cPreview"></p>
+    <div class="actions"><button class="primary" id="cSave">Save collection</button></div>`;
+  const read = () => ({ name: $("cName").value.trim(), icon: "⭐",
+    any: $("cAny").value.split(",").map(w => w.trim()).filter(Boolean),
+    none: $("cNone").value.split(",").map(w => w.trim()).filter(Boolean) });
+  const preview = () => {
+    const c = read();
+    if (!c.any.length) { $("cPreview").textContent = ""; return; }
+    const cc = compileColl(c), n = lots.filter(l => inColl(l, cc)).length;
+    $("cPreview").textContent = `${n} lots match right now.`;
+  };
+  ["cAny", "cNone"].forEach(id => $(id).addEventListener("input", preview));
+  $("cSave").addEventListener("click", () => {
+    const c = read();
+    if (!c.name || !c.any.length) { $("cPreview").textContent = "Give it a name and at least one word."; return; }
+    custom = custom.filter(x => x.name !== c.name).concat(c);
+    store.set("colls", custom); activeColl = c.name; store.set("activeColl", c.name);
+    tagCollections(); $("dlg").close();
+  });
+  $("closeDlg").addEventListener("click", () => $("dlg").close());
+  $("dlg").showModal();
 }
 
+// ---------- list ----------
 function timeLeft(end) {
   const s = end - Date.now() / 1000;
   if (s <= 0) return "closed";
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
   return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h ${m}m`;
 }
-
-function matchesSearch(title, q) {
-  const words = q.toLowerCase().split(/[,\s]+/).filter(Boolean);
-  const t = title.toLowerCase();
-  return words.every(w => w.startsWith("-") ? !t.includes(w.slice(1)) : t.includes(w));
+function matchesSearch(l, q) {
+  const t = `${l.title} ${l.brand || ""} ${l.model || ""} ${l.sub || ""}`.toLowerCase();
+  return q.toLowerCase().split(/[,\s]+/).filter(Boolean)
+    .every(w => w.startsWith("-") ? !t.includes(w.slice(1)) : t.includes(w));
 }
+const num = id => $(id).value === "" ? Infinity : Number($(id).value);
 
 function render() {
-  const now = Date.now() / 1000;
-  const q = $("q").value.trim(), cat = $("cat").value, term = $("term").value;
-  const within = now + Number($("within").value) * 3600;
-  const maxPrice = Number($("maxPrice").value) || Infinity;
-  const maxBids = $("maxBids").value === "" ? Infinity : Number($("maxBids").value);
-  const show = $("show").value;
+  const now = Date.now() / 1000, q = $("q").value.trim(), cat = $("cat").value, term = $("term").value;
+  const within = now + Number($("within").value) * 3600, show = $("show").value, bulk = $("bulk").value;
+  const maxPrice = num("maxPrice"), maxKm = num("maxKm"), maxF = num("maxFollowers");
   const ccs = new Set([...document.querySelectorAll("#countries input:checked")].map(i => i.value));
-
-  const list = lots.filter(l =>
-    l.end > now && l.end <= within &&
-    (!cat || l.cat === cat) && (!term || l.term === term) &&
-    ccs.has(l.cc) && l.bids <= maxBids && l.allIn <= maxPrice &&
-    (!q || matchesSearch(l.title, q)) &&
-    (show === "star" ? stars.has(l.id) : show === "hidden" ? hidden.has(l.id) : !hidden.has(l.id))
-  );
+  const termOk = l => term === "ALL" ? true : term === "" ? WIN.has(l.term) : l.term === term;
+  const base = lots.filter(l =>
+    l.end > now && l.end <= within && (!cat || l.cat === cat) &&
+    ccs.has(l.cc) && l.likely <= maxPrice && l.followers <= maxF && (!bulk || l.qty > 1) &&
+    (maxKm === Infinity || (l.km != null && l.km <= maxKm)) && (!q || matchesSearch(l, q)) &&
+    (show === "star" ? stars.has(l.id) : show === "hidden" ? hidden.has(l.id) :
+     show === "priced" ? !!myPrices[l.id] : !hidden.has(l.id)));
+  const withTerm = base.filter(termOk);
+  renderColls(withTerm);
+  const inActive = l => !activeColl || l.colls.includes(activeColl);
+  const list = withTerm.filter(inActive);
+  const extra = term === "" ? base.filter(l => !WIN.has(l.term) && inActive(l)).length : 0;
+  $("reserveHint").innerHTML = extra ? `· <a id="showReserve">+${extra} with reserve not met yet</a>` : "";
+  const last = v => v == null ? Infinity : v;
   const sorters = {
     end: (a, b) => a.end - b.end,
-    price: (a, b) => a.allIn - b.allIn,
-    followers: (a, b) => b.followers - a.followers,
-    bids: (a, b) => a.bids - b.bids || a.end - b.end,
+    profit: (a, b) => last(-a.profit) - last(-b.profit) || a.end - b.end,
+    price: (a, b) => a.likely - b.likely,
+    unit: (a, b) => a.unit - b.unit,
+    km: (a, b) => last(a.km) - last(b.km),
+    quiet: (a, b) => a.followers - b.followers || a.end - b.end,
+    belowComps: (a, b) => last(-a.belowComps) - last(-b.belowComps),
   };
   list.sort(sorters[$("sort").value]);
-
   $("count").textContent = `${list.length.toLocaleString("nl-NL")} lots`;
-  $("grid").innerHTML = list.length ? list.slice(0, shown).map(card).join("")
-    : `<p class="empty">No lots match these filters.</p>`;
+  $("grid").innerHTML = list.length ? list.slice(0, shown).map(card).join("") : `<p class="empty">No lots match these filters.</p>`;
   $("more").hidden = list.length <= shown;
 }
 
-function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function lotUrl(l) { return `https://www.troostwijkauctions.com/nl/l/${encodeURIComponent(l.slug)}`; }
 
 function card(l) {
-  const url = `https://www.troostwijkauctions.com/nl/l/${encodeURIComponent(l.slug)}`;
-  const soon = l.end - Date.now() / 1000 < 6 * 3600;
+  const url = lotUrl(l), soon = l.end - Date.now() / 1000 < 6 * 3600;
   const img = l.img ? `background-image:url('${esc(l.img)}')` : "";
+  const termBadge = { GUARANTEED_SALE: ["", "No reserve"], OPEN_RESERVE_PRICE_ACHIEVED: ["met", "Reserve met"] }[l.term] || ["bad", "Reserve not met"];
+  const badges = [`<span class="badge ${termBadge[0]}">${termBadge[1]}</span>`];
+  if (l.qty > 1) badges.push(`<span class="badge info">${l.qty}×</span>`);
+  if (l.margin) badges.push(`<span class="badge info">Margin VAT</span>`);
+  let deal = "";
+  if (l.sale) {
+    const ok = l.likelyBid <= l.maxBid;
+    deal = `<div class="deal ${ok ? "" : "bad"}">Max bid ${eur(l.maxBid)} · profit ~${eur(l.profit)}</div>`;
+  }
   return `<article class="lot ${hidden.has(l.id) ? "hidden-lot" : ""}">
-    <a class="img" href="${url}" target="_blank" rel="noopener" style="${img}">
-      <span class="badge ${l.term === "GUARANTEED_SALE" ? "" : "met"}">${l.term === "GUARANTEED_SALE" ? "No reserve" : "Reserve met"}</span>
-    </a>
+    <a class="img" href="${url}" target="_blank" rel="noopener" style="${img}"><span class="badges">${badges.join("")}</span></a>
     <div class="body">
       <a class="title" href="${url}" target="_blank" rel="noopener">${esc(l.title)}</a>
-      <div class="price">${eur(l.allIn)} <small>all-in · ${l.bids ? "bid" : "start"} ${eur(l.bid)}</small></div>
+      <div class="price">${l.pred ? "~" : ""}${eur(l.likely)} <small>${l.pred ? "likely all-in" : "all-in now"} · bid ${eur(l.bid)}</small></div>
+      ${l.qty > 1 ? `<div class="row"><span>${eur(l.unit)} per unit incl. travel</span></div>` : ""}
       <div class="row">
-        <span class="${soon ? "soon" : ""}">⏱ ${timeLeft(l.end)}</span>
-        <span>${l.bids} bids</span><span>${l.followers} followers</span>
+        <span class="${soon ? "soon" : ""}">⏱ ${timeLeft(l.end)}</span><span>${l.bids} bids</span><span>${l.followers} followers</span>
       </div>
-      <div class="row"><span>📍 ${esc(l.city)}, ${l.cc}</span><span>${esc(l.cat)}</span></div>
+      <div class="row"><span>📍 ${esc(l.city)}, ${l.cc}${l.km != null ? ` · ${Math.round(l.km)} km (${eur(l.travel)})` : ""}</span><span>${esc(l.sub || l.cat)}</span></div>
+      ${l.comps ? `<div class="row"><span>Similar sold: ~${eur(l.comps.price)} bid (${l.comps.n})</span></div>` : ""}
+      ${deal}
       <div class="actions">
-        <button class="${stars.has(l.id) ? "on" : ""}" data-star="${l.id}">${stars.has(l.id) ? "★ Starred" : "☆ Star"}</button>
+        <button class="primary" data-calc="${l.id}">Deal calc</button>
+        <button class="${stars.has(l.id) ? "on" : ""}" data-star="${l.id}">${stars.has(l.id) ? "★" : "☆"} Star</button>
         <button data-hide="${l.id}">${hidden.has(l.id) ? "Unhide" : "Hide"}</button>
       </div>
     </div>
   </article>`;
 }
 
-function recompute() {
-  lots.forEach(l => l.allIn = allIn(l.bid));
-  render();
+// ---------- deal calculator ----------
+function spark(values) {
+  if (!values || values.length < 2) return "";
+  const w = 120, h = 28, max = Math.max(...values), min = Math.min(...values), span = max - min || 1;
+  const pts = values.map((v, i) => `${(i / (values.length - 1) * w).toFixed(1)},${(h - 2 - (v - min) / span * (h - 4)).toFixed(1)}`).join(" ");
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="currentColor" stroke-width="1.5" points="${pts}"/></svg>`;
 }
 
-function setupFees() {
-  for (const k of ["premium", "fixed", "vat", "reclaim"]) {
-    $(k).value = fees[k];
-    $(k).addEventListener("input", () => {
-      fees[k] = k === "reclaim" ? $(k).value : Number($(k).value) || 0;
-      store.set("fees", fees);
-      recompute();
-    });
+function openCalc(id) {
+  const l = lots.find(x => x.id === id);
+  if (!l) return;
+  const p = myPrices[id] || {};
+  const query = encodeURIComponent([l.brand, l.model].filter(Boolean).join(" ") || l.title.replace(/\(\d+x\)/i, ""));
+  const ex = l.comps ? `<h3>Similar lots that sold on Troostwijk</h3><ul class="examples">${l.comps.examples.map(e =>
+      `<li><a href="https://www.troostwijkauctions.com/nl/l/${encodeURIComponent(e.slug)}" target="_blank" rel="noopener">${esc(e.title)}</a> · ${eur(e.final)} bid · ${new Date(e.end * 1000).toLocaleDateString("nl-NL")}</li>`).join("")}</ul>` : "";
+  $("modal").innerHTML = `
+    <div class="modal-head">
+      <div><h2>${esc(l.title)}</h2><div class="meta">${[l.brand, l.model].filter(Boolean).map(esc).join(" · ")}${l.qty > 1 ? ` · ${l.qty} units` : ""} · closes in ${timeLeft(l.end)}</div></div>
+      <button id="closeDlg" aria-label="Close">✕</button>
+    </div>
+    <h3>Your prices</h3>
+    <div class="filters">
+      <label>New price (shop) <input id="newPrice" type="number" min="0" value="${p.newPrice ?? ""}" placeholder="${l.qty > 1 ? `for all ${l.qty} units` : "price new"}"></label>
+      <label>Your sale price <input id="salePriceIn" type="number" min="0" value="${p.salePrice ?? ""}" placeholder="what you'd sell it for"></label>
+    </div>
+    <div class="links">Look up new price:
+      <a href="https://www.google.com/search?tbm=shop&q=${query}" target="_blank" rel="noopener">Google Shopping</a>
+      <a href="https://tweakers.net/zoeken/?keyword=${query}&type=pricewatch" target="_blank" rel="noopener">Tweakers</a>
+      <a href="https://www.bol.com/nl/nl/s/?searchtext=${query}" target="_blank" rel="noopener">bol.com</a>
+      <a href="https://www.amazon.nl/s?k=${query}" target="_blank" rel="noopener">Amazon.nl</a>
+    </div>
+    ${WIN.has(l.term) ? "" : `<p class="deal bad">Reserve not reached yet. If bidding stays below the reserve, this lot doesn't sell.</p>`}
+    <div id="calcOut"></div>
+    ${ex}
+    <p class="hint">Bid trend over the last scans: ${spark(l.trend) || "not enough scans yet"}</p>
+    <div class="actions"><a href="${lotUrl(l)}" target="_blank" rel="noopener"><button class="primary">Open on Troostwijk</button></a></div>`;
+  const update = () => {
+    const np = $("newPrice").value, sp = $("salePriceIn").value;
+    if (np || sp) myPrices[id] = { newPrice: np ? Number(np) : null, salePrice: sp ? Number(sp) : null };
+    else delete myPrices[id];
+    store.set("prices", myPrices);
+    compute(l);
+    const rows = [
+      ["All-in at current bid " + eur(l.bid), eur(l.now)],
+      l.pred ? [`Likely all-in (bid ~${eur(l.pred.mid)}, from ${l.pred.n} past lots)`, eur(l.likely)] : ["Likely closing price", "learning…"],
+      l.pred ? [`If bidding gets hot (bid ~${eur(l.pred.high)})`, eur(allIn(l.pred.high, l))] : null,
+      l.km != null ? [`Travel: ${Math.round(l.km)} km each way`, eur(l.travel)] : ["Travel", "set home in Settings"],
+    ];
+    if (np) rows.push([`Discount vs new (at likely price)`, `${Math.round((1 - (l.likely + l.travel) / Number(np)) * 100)}%`]);
+    if (l.sale) {
+      rows.push([`Sale price${sp ? "" : ` (${cfg.resale}% of new)`}`, eur(l.sale)]);
+      rows.push([`<b>Max bid for ${cfg.margin}% margin</b>`, `<span class="big ${l.maxBid > 0 && l.likelyBid <= l.maxBid ? "good" : "badtxt"}">${eur(Math.max(l.maxBid, 0))}</span>`]);
+      rows.push([`Profit at likely price`, `<span class="${l.profit > 0 ? "good" : "badtxt"}">${eur(l.profit)}</span>`]);
+    }
+    $("calcOut").innerHTML = `<h3>The numbers</h3><table>${rows.filter(Boolean).map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table>
+      ${l.sale ? `<p class="hint">${l.likelyBid <= l.maxBid ? "Likely closes under your max bid." : "Likely closes above your max bid: probably skip this one."} Set Troostwijk's auto-bid to the max bid and walk away. Going higher eats your margin.</p>` : `<p class="hint">Enter a new price or your sale price to see your max bid.</p>`}`;
+  };
+  $("newPrice").addEventListener("input", update);
+  $("salePriceIn").addEventListener("input", update);
+  $("closeDlg").addEventListener("click", () => $("dlg").close());
+  update();
+  $("dlg").showModal();
+}
+$("dlg").addEventListener("close", render);
+$("dlg").addEventListener("click", e => { if (e.target === $("dlg")) $("dlg").close(); });
+
+// ---------- settings ----------
+function saveCfg() { store.set("cfg", cfg); recompute(); }
+function setupSettings() {
+  for (const k of ["premium", "fixed", "vat", "perKm", "margin", "resale"]) {
+    $(k).value = cfg[k];
+    $(k).addEventListener("input", () => { cfg[k] = Number($(k).value) || 0; saveCfg(); });
   }
+  $("reclaim").value = cfg.reclaim;
+  $("reclaim").addEventListener("input", () => { cfg.reclaim = $("reclaim").value; saveCfg(); });
+  $("home").value = cfg.home;
+  homeStatus();
+  $("findHome").addEventListener("click", async () => {
+    const q = $("home").value.trim();
+    if (!q) return;
+    $("homeStatus").textContent = "Looking up…";
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`);
+      const res = await r.json();
+      if (!res.length) { $("homeStatus").textContent = "Not found. Try a postcode plus city."; return; }
+      cfg.home = q; cfg.homeGeo = [Number(res[0].lat), Number(res[0].lon)];
+      saveCfg(); homeStatus();
+    } catch { $("homeStatus").textContent = "Lookup failed. Try again or use your location."; }
+  });
+  $("gpsHome").addEventListener("click", () => {
+    if (!navigator.geolocation) { $("homeStatus").textContent = "Your browser can't share location."; return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+      cfg.home = "My location"; cfg.homeGeo = [pos.coords.latitude, pos.coords.longitude];
+      $("home").value = cfg.home; saveCfg(); homeStatus();
+    }, () => { $("homeStatus").textContent = "Location blocked. Type your postcode instead."; });
+  });
+}
+function homeStatus() {
+  $("homeStatus").textContent = cfg.homeGeo ? `Home set: ${cfg.home}. Distances are estimated road kilometres.` : "Set your home to see distance and travel cost.";
 }
 
-function setupFilters(data) {
-  const cats = [...new Set(data.lots.map(l => l.cat))].sort();
+function setupFilters() {
+  const cats = [...new Set(lots.map(l => l.cat))].sort();
   $("cat").insertAdjacentHTML("beforeend", cats.map(c => `<option>${esc(c)}</option>`).join(""));
   const counts = {};
-  data.lots.forEach(l => counts[l.cc] = (counts[l.cc] || 0) + 1);
+  lots.forEach(l => counts[l.cc] = (counts[l.cc] || 0) + 1);
   const saved = store.get("countries", null);
   $("countries").innerHTML = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map(cc =>
-    `<label class="chip"><input type="checkbox" value="${cc}" ${!saved || saved.includes(cc) ? "checked" : ""}>${cc || "?"} (${counts[cc]})</label>`
-  ).join("");
-  for (const id of ["q", "cat", "term", "within", "maxPrice", "maxBids", "sort", "show"]) {
-    const saved = store.get("f_" + id, null);
-    if (saved !== null && id !== "q") $(id).value = saved;
+    `<label class="chip"><input type="checkbox" value="${esc(cc)}" ${!saved || saved.includes(cc) ? "checked" : ""}>${esc(cc) || "?"} (${counts[cc]})</label>`).join("");
+  for (const id of ["q", "cat", "term", "within", "maxPrice", "maxKm", "maxFollowers", "bulk", "sort", "show"]) {
+    const v = store.get("f_" + id, null);
+    if (v !== null && id !== "q") $(id).value = v;
     $(id).addEventListener("input", () => { store.set("f_" + id, $(id).value); shown = PAGE; render(); });
   }
   $("countries").addEventListener("change", () => {
@@ -277,25 +527,35 @@ function setupFilters(data) {
 }
 
 $("grid").addEventListener("click", e => {
-  const s = e.target.dataset.star, h = e.target.dataset.hide;
+  const b = e.target.closest("button");
+  if (!b) return;
+  const { star: s, hide: h, calc: c } = b.dataset;
   if (s) { stars.has(s) ? stars.delete(s) : stars.add(s); store.set("stars", [...stars]); render(); }
   if (h) { hidden.has(h) ? hidden.delete(h) : hidden.add(h); store.set("hidden", [...hidden]); render(); }
+  if (c) openCalc(c);
 });
 $("more").addEventListener("click", () => { shown += PAGE; render(); });
+if (window.innerWidth < 700) $("filterPanel").open = false;
+$("reserveHint").addEventListener("click", e => {
+  if (e.target.id === "showReserve") { $("term").value = "ALL"; store.set("f_term", "ALL"); render(); }
+});
 
-fetch("lots.json?" + Date.now())
-  .then(r => r.json())
-  .then(data => {
-    lots = data.lots;
-    const updated = data.generatedAt ? new Date(data.generatedAt).toLocaleString("nl-NL",
-      { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "never";
-    $("meta").textContent = `Updated ${updated} · ${data.count.toLocaleString("nl-NL")} lots where the highest bid wins`;
-    setupFees();
-    setupFilters(data);
-    recompute();
+Promise.all([
+  fetch("lots.json?" + Date.now()).then(r => r.json()),
+  fetch("collections.json?" + Date.now()).then(r => r.json()).catch(() => []),
+])
+  .then(([data, colls]) => {
+    lots = data.lots; meta = data.meta || {}; builtIn = colls;
+    tagCollections();
+    const updated = meta.generatedAt ? new Date(meta.generatedAt).toLocaleString("nl-NL", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "never";
+    $("meta").textContent = `Updated ${updated} · ${(meta.count || lots.length).toLocaleString("nl-NL")} lots tracked`;
+    $("learn").textContent = meta.modelGroups
+      ? `Price predictions learned from ${meta.historySold.toLocaleString("nl-NL")} sold lots`
+      : `Learning: ${(meta.historySold || 0).toLocaleString("nl-NL")} sold lots so far. Predictions start once there's enough history.`;
+    setupSettings(); setupFilters(); recompute();
     setInterval(render, 60000);
   })
-  .catch(() => { $("meta").textContent = "No data yet: run the scan once (see the README)."; });
+  .catch(() => { $("meta").textContent = "No data yet: the first scan hasn't finished."; });
 </script>
 </body>
 </html>
