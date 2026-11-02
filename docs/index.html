@@ -371,7 +371,8 @@ function render() {
   $("more").hidden = list.length <= shown;
 }
 
-function lotUrl(l) { return `https://www.troostwijkauctions.com/nl/l/${encodeURIComponent(l.slug)}`; }
+// Troostwijk slugs are already URL-encoded ("%282x%29"), so use them as they are
+function lotUrl(l) { return `https://www.troostwijkauctions.com/nl/l/${esc(l.slug)}`; }
 
 function card(l) {
   const url = lotUrl(l), soon = l.end - Date.now() / 1000 < 6 * 3600;
@@ -420,7 +421,7 @@ function openCalc(id) {
   const p = myPrices[id] || {};
   const query = encodeURIComponent([l.brand, l.model].filter(Boolean).join(" ") || l.title.replace(/\(\d+x\)/i, ""));
   const ex = l.comps ? `<h3>Similar lots that sold on Troostwijk</h3><ul class="examples">${l.comps.examples.map(e =>
-      `<li><a href="https://www.troostwijkauctions.com/nl/l/${encodeURIComponent(e.slug)}" target="_blank" rel="noopener">${esc(e.title)}</a> · ${eur(e.final)} bid · ${new Date(e.end * 1000).toLocaleDateString("nl-NL")}</li>`).join("")}</ul>` : "";
+      `<li><a href="https://www.troostwijkauctions.com/nl/l/${esc(e.slug)}" target="_blank" rel="noopener">${esc(e.title)}</a> · ${eur(e.final)} bid · ${new Date(e.end * 1000).toLocaleDateString("nl-NL")}</li>`).join("")}</ul>` : "";
   $("modal").innerHTML = `
     <div class="modal-head">
       <div><h2>${esc(l.title)}</h2><div class="meta">${[l.brand, l.model].filter(Boolean).map(esc).join(" · ")}${l.qty > 1 ? ` · ${l.qty} units` : ""} · closes in ${timeLeft(l.end)}</div></div>
