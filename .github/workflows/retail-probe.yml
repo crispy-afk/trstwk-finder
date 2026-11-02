@@ -1,0 +1,29 @@
+name: Retail probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "Product to search for"
+        required: true
+        default: "makita dhp484"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install curl_cffi
+      - name: Test shop sites
+        env:
+          QUERY: ${{ inputs.query }}
+        run: python scraper/retail_probe.py "$QUERY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retail-probe
+          path: probe/
+          retention-days: 7
