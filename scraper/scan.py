@@ -10,7 +10,7 @@ import os
 import sys
 import time
 
-from common import (BASE, RESERVE_NOT_MET, WIN_TERMS, fetch, get_categories,
+from common import (BASE, RESERVE_NOT_MET, STATS, WIN_TERMS, fetch, get_categories,
                     next_data, valuable_subcategories)
 
 HORIZON_HOURS = int(os.environ.get("HORIZON_HOURS", "72"))
@@ -22,6 +22,7 @@ def compact(lot, main, sub):
     loc = lot.get("location") or {}
     return {
         "id": lot["displayId"],
+        "uuid": lot.get("id"),
         "title": lot.get("title", ""),
         "slug": lot.get("urlSlug", ""),
         "img": (lot.get("image") or {}).get("url"),
@@ -72,9 +73,11 @@ def scan_category(main, sub, path, now, lots):
 def main():
     shard, total = int(sys.argv[1]), int(sys.argv[2])
     now = int(time.time())
+    started = time.time()
     cats = get_categories()
     if not cats:
-        sys.exit("No categories found - Troostwijk may have changed their site.")
+        print(f"Page results: {STATS}")
+        sys.exit("No categories found - Troostwijk may be blocking us or changed their site.")
     mine = [c for i, c in enumerate(cats) if i % total == shard]
     print(f"Shard {shard + 1}/{total}: {len(mine)} of {len(cats)} subcategories")
 
@@ -85,8 +88,9 @@ def main():
     os.makedirs("out", exist_ok=True)
     with open(f"out/shard-{shard}.json", "w", encoding="utf-8") as f:
         json.dump({"scannedAt": now, "pages": pages, "categories": len(mine),
+                   "seconds": round(time.time() - started), "stats": STATS,
                    "lots": list(lots.values())}, f, ensure_ascii=False)
-    print(f"Saved {len(lots)} lots from {pages} pages")
+    print(f"Saved {len(lots)} lots from {pages} pages in {round(time.time() - started)}s. Page results: {STATS}")
 
 
 if __name__ == "__main__":
