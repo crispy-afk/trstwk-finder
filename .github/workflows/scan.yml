@@ -49,6 +49,7 @@ jobs:
       - run: pip install curl_cffi
 
       - uses: actions/download-artifact@v4
+        continue-on-error: true   # if every scanner failed, still write a status report
         with:
           pattern: shard-*
           path: out/
@@ -65,21 +66,24 @@ jobs:
         run: python scraper/merge.py
 
       - name: Save memory for next run
+        if: success()
         uses: actions/cache/save@v4
         with:
           path: state/
           key: state-${{ github.run_id }}
 
-      - name: Save price history
+      - name: Save price history and status
+        if: always()
         run: |
           git config user.name "troostwijk-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/
-          git diff --cached --quiet || git commit -m "Price history update"
+          git diff --cached --quiet || git commit -m "Scan $(date -u +%H:%M) - $(python3 -c "import json;s=json.load(open('data/status.json'));print('ok' if s.get('ok') else 'FAILED: '+s.get('error',''))" 2>/dev/null || echo 'no status')"
           git pull --rebase
           git push
 
       - uses: actions/upload-pages-artifact@v3
+        if: success()
         with:
           path: _site/
 
