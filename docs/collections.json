@@ -1,0 +1,363 @@
+[
+ {
+  "name": "Cars",
+  "icon": "🚗",
+  "subs": [
+   "Auto's"
+  ],
+  "none": [
+   "onderdeel",
+   "onderdelen",
+   "velg",
+   "velgen",
+   "band",
+   "banden",
+   "miniatuur",
+   "schaalmodel",
+   "1:18",
+   "1:43",
+   "speelgoed",
+   "kentekenplaat"
+  ]
+ },
+ {
+  "name": "iPhones",
+  "icon": "📱",
+  "any": [
+   "iphone"
+  ],
+  "none": [
+   "hoes",
+   "hoesje",
+   "case",
+   "cover",
+   "screenprotector",
+   "beschermglas",
+   "tempered",
+   "kabel",
+   "cable",
+   "oplader",
+   "charger",
+   "lens protector",
+   "houder",
+   "holder"
+  ]
+ },
+ {
+  "name": "Apple",
+  "icon": "🍏",
+  "any": [
+   "iphone",
+   "ipad",
+   "macbook",
+   "imac",
+   "mac mini",
+   "mac studio",
+   "airpods",
+   "apple watch",
+   "apple tv",
+   "homepod",
+   "vision pro"
+  ],
+  "none": [
+   "hoes",
+   "hoesje",
+   "case",
+   "cover",
+   "screenprotector",
+   "beschermglas",
+   "tempered",
+   "kabel",
+   "cable",
+   "oplader",
+   "charger",
+   "sleeve",
+   "bandje",
+   "strap",
+   "houder",
+   "holder"
+  ]
+ },
+ {
+  "name": "Phones",
+  "icon": "☎️",
+  "subs": [
+   "Telecom & navigatie"
+  ],
+  "any": [
+   "iphone",
+   "samsung galaxy",
+   "google pixel",
+   "smartphone",
+   "oneplus",
+   "fairphone"
+  ],
+  "none": [
+   "hoes",
+   "hoesje",
+   "case",
+   "cover",
+   "screenprotector",
+   "beschermglas",
+   "tempered",
+   "kabel",
+   "cable",
+   "oplader",
+   "charger",
+   "houder",
+   "holder"
+  ],
+  "needBoth": false
+ },
+ {
+  "name": "Laptops & tablets",
+  "icon": "💻",
+  "subs": [
+   "Computers & tablets"
+  ],
+  "any": [
+   "laptop",
+   "notebook",
+   "macbook",
+   "thinkpad",
+   "ipad",
+   "surface",
+   "chromebook",
+   "tablet"
+  ],
+  "none": [
+   "hoes",
+   "sleeve",
+   "tas",
+   "bag",
+   "case",
+   "adapter",
+   "dock",
+   "docking",
+   "standaard",
+   "stand"
+  ],
+  "needBoth": true
+ },
+ {
+  "name": "Gaming",
+  "icon": "🎮",
+  "subs": [
+   "Gaming, film & muziek"
+  ],
+  "any": [
+   "playstation",
+   "ps5",
+   "ps4",
+   "xbox",
+   "nintendo",
+   "switch 2",
+   "steam deck",
+   "rog ally",
+   "gaming pc",
+   "rtx"
+  ]
+ },
+ {
+  "name": "Cameras & drones",
+  "icon": "📷",
+  "subs": [
+   "Foto & video"
+  ],
+  "any": [
+   "canon eos",
+   "nikon",
+   "sony alpha",
+   "sony a7",
+   "fujifilm",
+   "gopro",
+   "dji",
+   "drone",
+   "leica",
+   "hasselblad"
+  ]
+ },
+ {
+  "name": "TV & audio",
+  "icon": "📺",
+  "subs": [
+   "Beeld & geluid"
+  ],
+  "any": [
+   "oled",
+   "qled",
+   "sonos",
+   "bose",
+   "bang & olufsen",
+   "b&o",
+   "marantz",
+   "denon",
+   "beamer",
+   "projector"
+  ]
+ },
+ {
+  "name": "Watches",
+  "icon": "⌚",
+  "subs": [
+   "Horloges"
+  ],
+  "any": [
+   "rolex",
+   "omega",
+   "tag heuer",
+   "breitling",
+   "cartier",
+   "tudor",
+   "seiko",
+   "longines",
+   "patek",
+   "audemars",
+   "iwc",
+   "apple watch"
+  ]
+ },
+ {
+  "name": "Gold & jewellery",
+  "icon": "💍",
+  "subs": [
+   "Sieraden & Juwelen",
+   "Sieraden & juwelen"
+  ],
+  "any": [
+   "goud",
+   "gouden",
+   "gold",
+   "diamant",
+   "diamond",
+   "14k",
+   "18k",
+   "14 karaat",
+   "18 karaat",
+   "platina",
+   "briljant"
+  ]
+ },
+ {
+  "name": "Coins & stamps",
+  "icon": "🪙",
+  "subs": [
+   "Postzegels & munten"
+  ],
+  "any": [
+   "gouden munt",
+   "zilveren munt",
+   "krugerrand",
+   "maple leaf",
+   "goudbaar",
+   "zilverbaar"
+  ]
+ },
+ {
+  "name": "Wine & spirits",
+  "icon": "🍷",
+  "subs": [
+   "Wijn & gedistilleerd",
+   "Sterke drank",
+   "Wijnen"
+  ]
+ },
+ {
+  "name": "Designer bags",
+  "icon": "👜",
+  "subs": [
+   "Tassen & portemonnees"
+  ],
+  "any": [
+   "louis vuitton",
+   "gucci",
+   "prada",
+   "hermes",
+   "hermès",
+   "chanel",
+   "dior",
+   "bottega",
+   "fendi",
+   "balenciaga",
+   "saint laurent",
+   "ysl"
+  ],
+  "needBoth": true
+ },
+ {
+  "name": "Motorbikes & scooters",
+  "icon": "🏍️",
+  "subs": [
+   "Motoren en Quads",
+   "Brommers & scooters"
+  ],
+  "none": [
+   "onderdeel",
+   "onderdelen",
+   "helm",
+   "kleding",
+   "jas",
+   "handschoen"
+  ]
+ },
+ {
+  "name": "E-bikes",
+  "icon": "🚲",
+  "subs": [
+   "Fietsen"
+  ],
+  "any": [
+   "e-bike",
+   "ebike",
+   "elektrische fiets",
+   "speed pedelec",
+   "speedpedelec",
+   "bakfiets",
+   "van moof",
+   "vanmoof",
+   "cowboy",
+   "gazelle",
+   "stromer",
+   "riese"
+  ],
+  "needBoth": true
+ },
+ {
+  "name": "Campers",
+  "icon": "🚐",
+  "subs": [
+   "Kampeervoertuigen"
+  ]
+ },
+ {
+  "name": "Boats",
+  "icon": "🚤",
+  "subs": [
+   "Motorboten",
+   "Sportboten",
+   "Zeilboten"
+  ]
+ },
+ {
+  "name": "Pro power tools",
+  "icon": "🛠️",
+  "subs": [
+   "Accugereedschap",
+   "Elektrisch gereedschap",
+   "Pneumatisch gereedschap"
+  ],
+  "any": [
+   "makita",
+   "dewalt",
+   "milwaukee",
+   "festool",
+   "hilti",
+   "metabo",
+   "hikoki",
+   "bosch professional",
+   "fein",
+   "mafell"
+  ],
+  "needBoth": true
+ }
+]
