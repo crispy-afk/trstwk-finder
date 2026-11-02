@@ -1,0 +1,94 @@
+name: Scan Troostwijk
+
+on:
+  schedule:
+    - cron: "7 * * * *"   # every hour
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install curl_cffi
+      - name: Scan part ${{ matrix.shard }}
+        run: python scraper/scan.py ${{ matrix.shard }} 6
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.shard }}
+          path: out/
+          retention-days: 1
+
+  merge:
+    needs: scan
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install curl_cffi
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shard-*
+          path: out/
+          merge-multiple: true
+
+      - name: Load memory from last run
+        uses: actions/cache/restore@v4
+        with:
+          path: state/
+          key: state-${{ github.run_id }}
+          restore-keys: state-
+
+      - name: Merge, history and prices
+        run: python scraper/merge.py
+
+      - name: Save memory for next run
+        uses: actions/cache/save@v4
+        with:
+          path: state/
+          key: state-${{ github.run_id }}
+
+      - name: Save price history
+        run: |
+          git config user.name "troostwijk-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "Price history update"
+          git pull --rebase
+          git push
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site/
+
+  deploy:
+    needs: merge
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
