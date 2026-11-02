@@ -24,17 +24,20 @@ from datetime import datetime, timezone
 
 from curl_cffi import requests as http
 
-from common import BASE, fetch, next_data, quantity_from_title
+from common import BASE, STATS, fetch, lot_bidding, next_data, quantity_from_title, sold_from
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 STATE = os.path.join(ROOT, "state", "state.json")
 HISTORY = os.path.join(ROOT, "data", "history")
 GEOCACHE = os.path.join(ROOT, "data", "geocache.json")
+STATUS = os.path.join(ROOT, "data", "status.json")
+HISTORY_VERSION = 2   # records from before v2 were read from the wrong place
 SITE = os.path.join(ROOT, "_site")
 
 ENRICH_CAP = int(os.environ.get("ENRICH_CAP", "700"))
 CLOSE_CAP = int(os.environ.get("CLOSE_CAP", "900"))
 GEO_CAP = int(os.environ.get("GEO_CAP", "150"))
+REPAIR_CAP = int(os.environ.get("REPAIR_CAP", "400"))
 WORKERS = 4
 HISTORY_DAYS = 120
 SHOW_IF_SEEN_WITHIN = 3 * 3600
@@ -102,15 +105,6 @@ def parse_details(pp):
     }
 
 
-def parse_close(pp):
-    lot = pp.get("lot") or {}
-    return {
-        "status": lot.get("biddingStatus"),
-        "term": lot.get("saleTerm") or "",
-        "bids": lot.get("bidsCount") or 0,
-        "amount": ((lot.get("currentBidAmount") or {}).get("cents") or 0) / 100,
-    }
-
 
 def run_parallel(func, items):
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
@@ -121,21 +115,25 @@ def run_parallel(func, items):
 
 def merge_shards(tracked):
     files = sorted(glob.glob(os.path.join(ROOT, "out", "shard-*.json")))
-    total = 0
+    total, shards = 0, []
     for path in files:
         shard = load_json(path, {})
+        seen_at = shard.get("scannedAt") or NOW
+        shards.append({"file": os.path.basename(path), "lots": len(shard.get("lots", [])),
+                       "pages": shard.get("pages"), "seconds": shard.get("seconds"),
+                       "stats": shard.get("stats")})
         for lot in shard.get("lots", []):
             total += 1
             t = tracked.get(lot["id"]) or {"snaps": [], "details": None, "tries": 0}
             t.update(lot)
             snaps = t["snaps"]
-            if not snaps or NOW - snaps[-1][0] > 1800:
-                snaps.append([NOW, lot["bid"], lot["bids"], lot["followers"]])
+            if not snaps or seen_at - snaps[-1][0] > 1800:
+                snaps.append([seen_at, lot["bid"], lot["bids"], lot["followers"]])
                 del snaps[:-100]
-            t["seen"] = NOW
+            t["seen"] = seen_at
             tracked[lot["id"]] = t
     print(f"Merged {total} lots from {len(files)} shards")
-    return total, len(files)
+    return total, shards
 
 
 # ---------- step 2: details for new lots ----------
@@ -148,7 +146,13 @@ def enrich(tracked):
 
     def work(t):
         pp = lot_page(t["slug"])
-        return parse_details(pp) if pp else None
+        if not pp:
+            return None
+        d = parse_details(pp)
+        b = lot_bidding(t["id"])  # real buyer's premium and VAT for this lot
+        if b:
+            d["premium"], d["vat"] = b["premium"], b["vat"]
+        return d
 
     results = run_parallel(work, todo)
     ok = 0
@@ -168,15 +172,13 @@ def close_lots(tracked):
     due.sort(key=lambda t: t["end"])
     due = due[:CLOSE_CAP]
 
-    def work(t):
-        pp = lot_page(t["slug"])
-        return parse_close(pp) if pp else None
-
-    results = run_parallel(work, due)
+    results = run_parallel(lambda t: lot_bidding(t["id"]), due)
     records, still_open, failed = [], 0, 0
     for t, c in zip(due, results):
         if c and c["status"] == "BIDDING_OPEN":
             still_open += 1
+            if c.get("end"):
+                t["end"] = c["end"]  # closing time was extended by late bids
             t["closeTries"] = t.get("closeTries", 0) + 1
             if t["closeTries"] < 6:
                 continue
@@ -188,13 +190,10 @@ def close_lots(tracked):
         tracked.pop(t["id"], None)
         if not c or c["status"] == "BIDDING_OPEN":
             continue
-        term = c["term"].upper()
-        if "PENDING" in term:
-            sold = None
-        else:
-            sold = c["bids"] > 0 and "DECLINED" not in term and "UNSOLD" not in term
+        sold = sold_from(c["term"], c["bids"])
         d = t.get("details") or {}
         records.append({
+            "v": HISTORY_VERSION,
             "id": t["id"], "title": t["title"], "slug": t["slug"], "cat": t["cat"], "sub": t.get("sub"),
             "cc": t["cc"], "end": t["end"], "term": c["term"], "sold": sold,
             "final": c["amount"] if sold else None, "bids": c["bids"],
@@ -202,7 +201,8 @@ def close_lots(tracked):
             "brand": d.get("brand"), "model": d.get("model"), "snaps": t["snaps"],
         })
     print(f"Closed: {len(records)} saved, {still_open} still open, {failed} failed")
-    return records
+    return records, {"due": len(due), "saved": len(records), "stillOpen": still_open, "failed": failed,
+                     "sold": sum(1 for r in records if r["sold"])}
 
 
 def write_history(records):
@@ -218,6 +218,31 @@ def write_history(records):
     existing.update({r["id"]: r for r in records})
     with gzip.open(path, "wt", encoding="utf-8") as f:
         json.dump(list(existing.values()), f, ensure_ascii=False, separators=(",", ":"))
+
+
+def repair_history():
+    """Re-read final prices for records saved before v2 (they were read from the wrong place)."""
+    fixed = checked = 0
+    for path in sorted(glob.glob(os.path.join(HISTORY, "**", "*.json.gz"), recursive=True)):
+        if checked >= REPAIR_CAP:
+            break
+        with gzip.open(path, "rt", encoding="utf-8") as f:
+            recs = json.load(f)
+        old = [r for r in recs if r.get("v", 1) < HISTORY_VERSION][:REPAIR_CAP - checked]
+        if not old:
+            continue
+        checked += len(old)
+        for r, c in zip(old, run_parallel(lambda r: lot_bidding(r["id"]), old)):
+            if c and c["status"] != "BIDDING_OPEN":
+                r.update({"v": HISTORY_VERSION, "term": c["term"], "bids": c["bids"],
+                          "sold": sold_from(c["term"], c["bids"])})
+                r["final"] = c["amount"] if r["sold"] else None
+                fixed += 1
+        with gzip.open(path, "wt", encoding="utf-8") as f:
+            json.dump(recs, f, ensure_ascii=False, separators=(",", ":"))
+    if checked:
+        print(f"Repaired {fixed}/{checked} old history records")
+    return {"checked": checked, "fixed": fixed}
 
 
 def load_history():
@@ -393,6 +418,7 @@ def build_site(tracked, model, comps, geo, history, run):
             "qty": qty,
             "brand": d.get("brand"), "model": d.get("model"),
             "margin": d.get("margin", False), "condition": d.get("condition"),
+            "premium": d.get("premium"), "vatRate": d.get("vat"),
             "pickupStart": d.get("pickupStart"), "appointment": d.get("appointment"),
             "geo": geo.get(f"{city.strip().upper()}|{cc}") if city else None,
             "pred": predict(t, model),
@@ -428,11 +454,14 @@ def main():
 
     merged, shards = merge_shards(tracked)
     if merged == 0:
+        save_json(STATUS, {"at": datetime.fromtimestamp(NOW, timezone.utc).isoformat(timespec="seconds"),
+                           "ok": False, "error": "zero lots from all shards", "shards": shards})
         sys.exit("Zero lots from all shards - something is broken. Keeping old data.")
 
     enrich(tracked)
-    records = close_lots(tracked)
+    records, closing = close_lots(tracked)
     write_history(records)
+    repaired = repair_history()
 
     history = load_history()
     model = build_model(history)
@@ -448,11 +477,28 @@ def main():
     geocode(sorted(places), geo)
     save_json(GEOCACHE, geo)
 
-    run = {"shards": shards, "merged": merged, "closedSaved": len(records),
+    run = {"shards": len(shards), "merged": merged, "closedSaved": len(records),
            "tracked": len(tracked), "seconds": round(time.time() - started)}
     build_site(tracked, model, comps, geo, history, run)
     save_json(STATE, state)
+    sold = sum(1 for r in history if r.get("sold"))
+    save_json(STATUS, {
+        "at": datetime.fromtimestamp(NOW, timezone.utc).isoformat(timespec="seconds"),
+        "ok": True, "mergeSeconds": round(time.time() - started),
+        "shards": shards, "merged": merged, "tracked": len(tracked),
+        "closing": closing, "repaired": repaired,
+        "history": {"lots": len(history), "sold": sold, "modelGroups": len(model)},
+        "geocache": len(geo), "mergeRequests": STATS,
+    })
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        save_json(STATUS, {"at": datetime.fromtimestamp(NOW, timezone.utc).isoformat(timespec="seconds"),
+                           "ok": False, "error": f"{type(e).__name__}: {e}"[:300],
+                           "where": traceback.format_exc()[-1500:], "requests": STATS})
+        sys.exit(1)
