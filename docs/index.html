@@ -122,6 +122,9 @@
       <label>Max likely all-in (€) <input id="maxPrice" type="number" min="0" placeholder="no limit"></label>
       <label>Max distance (km) <input id="maxKm" type="number" min="0" placeholder="no limit"></label>
       <label>Max followers <input id="maxFollowers" type="number" min="0" placeholder="no limit"></label>
+      <label>Bids so far
+        <select id="bidsF"><option value="">Any</option><option value="0">No bids yet</option><option value="3">3 or fewer</option></select>
+      </label>
       <label>Lot size
         <select id="bulk"><option value="">Any</option><option value="1">Bulk lots only (2+)</option></select>
       </label>
@@ -345,11 +348,12 @@ function render() {
   const now = Date.now() / 1000, q = $("q").value.trim(), cat = $("cat").value, term = $("term").value;
   const within = now + Number($("within").value) * 3600, show = $("show").value, bulk = $("bulk").value;
   const maxPrice = num("maxPrice"), maxKm = num("maxKm"), maxF = num("maxFollowers");
+  const maxBids = $("bidsF").value === "" ? Infinity : Number($("bidsF").value);
   const ccs = new Set([...document.querySelectorAll("#countries input:checked")].map(i => i.value));
   const termOk = l => term === "ALL" ? true : term === "" ? WIN.has(l.term) : l.term === term;
   const base = lots.filter(l =>
     l.end > now && l.end <= within && (!cat || l.cat === cat) &&
-    ccs.has(l.cc) && l.likely <= maxPrice && l.followers <= maxF && (!bulk || l.qty > 1) &&
+    ccs.has(l.cc) && l.likely <= maxPrice && l.followers <= maxF && l.bids <= maxBids && (!bulk || l.qty > 1) &&
     (maxKm === Infinity || (l.km != null && l.km <= maxKm)) && (!q || matchesSearch(l, q)) &&
     (show === "star" ? stars.has(l.id) : show === "hidden" ? hidden.has(l.id) :
      show === "priced" ? !!myPrices[l.id] : !hidden.has(l.id)));
@@ -520,7 +524,7 @@ function setupFilters() {
   const saved = store.get("countries", null);
   $("countries").innerHTML = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map(cc =>
     `<label class="chip"><input type="checkbox" value="${esc(cc)}" ${!saved || saved.includes(cc) ? "checked" : ""}>${esc(cc) || "?"} (${counts[cc]})</label>`).join("");
-  for (const id of ["q", "cat", "term", "within", "maxPrice", "maxKm", "maxFollowers", "bulk", "sort", "show"]) {
+  for (const id of ["q", "cat", "term", "within", "maxPrice", "maxKm", "maxFollowers", "bidsF", "bulk", "sort", "show"]) {
     const v = store.get("f_" + id, null);
     if (v !== null && id !== "q") $(id).value = v;
     $(id).addEventListener("input", () => { store.set("f_" + id, $(id).value); shown = PAGE; render(); });
