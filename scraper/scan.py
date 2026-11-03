@@ -88,6 +88,7 @@ def main():
     os.makedirs("out", exist_ok=True)
     with open(f"out/shard-{shard}.json", "w", encoding="utf-8") as f:
         json.dump({"scannedAt": now, "pages": pages, "categories": len(mine),
+                   "allCategories": cats if shard == 0 else None,
                    "seconds": round(time.time() - started), "stats": STATS,
                    "lots": list(lots.values())}, f, ensure_ascii=False)
     print(f"Saved {len(lots)} lots from {pages} pages in {round(time.time() - started)}s. Page results: {STATS}")
