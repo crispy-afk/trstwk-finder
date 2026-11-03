@@ -96,3 +96,33 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # GitHub's own schedule often skips or delays runs, so each run starts the next one
+  # itself, one hour after it began. The schedule above stays as a backup.
+  next:
+    needs: merge
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      actions: write
+    steps:
+      - name: Wait, then start the next scan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          started=$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq .run_started_at)
+          elapsed=$(( $(date +%s) - $(date -d "$started" +%s) ))
+          wait=$(( 3600 - elapsed ))
+          if [ "$wait" -gt 0 ]; then echo "Waiting $wait seconds"; sleep "$wait"; fi
+          others=$(gh run list -R "$REPO" --workflow scan.yml --limit 20 --json databaseId,status \
+            --jq "[.[] | select(.databaseId != $RUN_ID and .status != \"completed\")] | length")
+          if [ "$others" = "0" ]; then
+            gh workflow run scan.yml -R "$REPO" --ref "$BRANCH"
+            echo "Next scan started"
+          else
+            echo "Another scan is already waiting or running - not starting one"
+          fi
