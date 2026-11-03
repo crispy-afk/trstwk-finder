@@ -24,7 +24,8 @@ from datetime import datetime, timezone
 
 from curl_cffi import requests as http
 
-from common import BASE, STATS, fetch, lot_bidding, next_data, quantity_from_title, sold_from
+from common import (BASE, CATEGORIES_FILE, STATS, fetch, lot_bidding, next_data,
+                    quantity_from_title, sold_from, valuable_subcategories, volatile_batch)
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 STATE = os.path.join(ROOT, "state", "state.json")
@@ -34,11 +35,12 @@ STATUS = os.path.join(ROOT, "data", "status.json")
 HISTORY_VERSION = 2   # records from before v2 were read from the wrong place
 SITE = os.path.join(ROOT, "_site")
 
-ENRICH_CAP = int(os.environ.get("ENRICH_CAP", "700"))
-CLOSE_CAP = int(os.environ.get("CLOSE_CAP", "900"))
+ENRICH_CAP = int(os.environ.get("ENRICH_CAP", "350"))
+CLOSE_CAP = int(os.environ.get("CLOSE_CAP", "2000"))
 GEO_CAP = int(os.environ.get("GEO_CAP", "150"))
 REPAIR_CAP = int(os.environ.get("REPAIR_CAP", "400"))
-WORKERS = 4
+WORKERS = 3
+BATCH = 50
 HISTORY_DAYS = 120
 SHOW_IF_SEEN_WITHIN = 3 * 3600
 
@@ -119,6 +121,8 @@ def merge_shards(tracked):
     for path in files:
         shard = load_json(path, {})
         seen_at = shard.get("scannedAt") or NOW
+        if shard.get("allCategories") and len(shard["allCategories"]) > 100:
+            save_json(CATEGORIES_FILE, shard["allCategories"])  # fallback if the homepage is blocked
         shards.append({"file": os.path.basename(path), "lots": len(shard.get("lots", [])),
                        "pages": shard.get("pages"), "seconds": shard.get("seconds"),
                        "stats": shard.get("stats")})
@@ -139,9 +143,10 @@ def merge_shards(tracked):
 # ---------- step 2: details for new lots ----------
 
 def enrich(tracked):
+    valuable = valuable_subcategories()
     todo = [t for t in tracked.values()
             if t.get("details") is None and t.get("tries", 0) < 3 and t["end"] > NOW + 600]
-    todo.sort(key=lambda t: t["end"])
+    todo.sort(key=lambda t: (t.get("sub") not in valuable, t["end"]))  # valuables first, then soonest
     todo = todo[:ENRICH_CAP]
 
     def work(t):
@@ -167,12 +172,33 @@ def enrich(tracked):
 
 # ---------- step 3: final prices ----------
 
+def final_results(due):
+    """
+    Final status for each lot. No-reserve lots go 50 at a time through the batch
+    feed (sold = has bids). Reserve lots need the sale outcome, so one request each.
+    """
+    results = {}
+    batchable = [t for t in due if t.get("uuid") and t.get("term") == "GUARANTEED_SALE"]
+    chunks = [batchable[i:i + BATCH] for i in range(0, len(batchable), BATCH)]
+    for chunk, got in zip(chunks, run_parallel(lambda c: volatile_batch([t["uuid"] for t in c]), chunks)):
+        for t in chunk:
+            v = got.get(t["uuid"])
+            if v:
+                closed = v["status"] != "BIDDING_OPEN"
+                v["term"] = ("GUARANTEED_SALE_CLOSED" if v["bids"] else "UNSOLD") if closed else "GUARANTEED_SALE"
+                results[t["id"]] = v
+    rest = [t for t in due if t["id"] not in results]
+    for t, c in zip(rest, run_parallel(lambda t: lot_bidding(t["id"]), rest)):
+        results[t["id"]] = c
+    print(f"Final prices: {len(batchable)} by batch, {len(rest)} one by one")
+    return [results.get(t["id"]) for t in due]
+
 def close_lots(tracked):
     due = [t for t in tracked.values() if t["end"] < NOW - 300]
     due.sort(key=lambda t: t["end"])
     due = due[:CLOSE_CAP]
 
-    results = run_parallel(lambda t: lot_bidding(t["id"]), due)
+    results = final_results(due)
     records, still_open, failed = [], 0, 0
     for t, c in zip(due, results):
         if c and c["status"] == "BIDDING_OPEN":
